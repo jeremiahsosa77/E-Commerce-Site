@@ -1,0 +1,110 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --foreground-rgb: 255, 255, 255;
+  --background-start-rgb: 18, 18, 18;
+  --background-end-rgb: 10, 10, 10;
+  --primary-color: 0, 115, 255;
+  --silver-color: 113, 113, 122;
+}
+
+@layer base {
+  body {
+    @apply bg-nsynthic-dark text-white;
+    color: rgb(var(--foreground-rgb));
+    background: linear-gradient(
+      to bottom,
+      rgb(var(--background-start-rgb)),
+      rgb(var(--background-end-rgb))
+    );
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-sans font-bold;
+  }
+
+  h1 {
+    @apply text-3xl md:text-4xl mb-4;
+  }
+
+  h2 {
+    @apply text-2xl md:text-3xl mb-3;
+  }
+
+  h3 {
+    @apply text-xl md:text-2xl mb-2;
+  }
+
+  a {
+    @apply text-primary-500 hover:text-primary-400 transition-colors;
+  }
+
+  button {
+    @apply focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-opacity-50;
+  }
+}
+
+@layer components {
+  .card {
+    @apply bg-nsynthic-card rounded-lg shadow-md overflow-hidden;
+  }
+
+  .btn {
+    @apply px-4 py-2 rounded-md transition-all duration-200 font-medium;
+  }
+
+  .btn-primary {
+    @apply btn bg-primary-500 hover:bg-primary-600 text-white;
+  }
+
+  .btn-secondary {
+    @apply btn bg-silver-500 hover:bg-silver-600 text-white;
+  }
+
+  .btn-outlined {
+    @apply btn border-2 border-primary-500 text-primary-500 hover:bg-primary-500 hover:text-white;
+  }
+
+  .input {
+    @apply bg-nsynthic-card border border-silver-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-primary-500 w-full text-white;
+  }
+
+  .badge {
+    @apply px-2 py-1 rounded-full text-xs font-medium;
+  }
+
+  .badge-primary {
+    @apply badge bg-primary-500 text-white;
+  }
+
+  .badge-silver {
+    @apply badge bg-silver-500 text-white;
+  }
+
+  .futuristic-border {
+    @apply relative overflow-hidden;
+    &:before {
+      content: '';
+      @apply absolute inset-0 border-2 border-transparent rounded-lg;
+      background: linear-gradient(90deg, rgba(0,115,255,0) 0%, rgba(0,115,255,1) 50%, rgba(0,115,255,0) 100%);
+      background-size: 200% 100%;
+      animation: borderAnimation 3s linear infinite;
+      z-index: -1;
+    }
+  }
+
+  .futuristic-card {
+    @apply card p-4 transition-all duration-300 hover:shadow-[0_0_15px_rgba(0,115,255,0.5)] border border-silver-800;
+  }
+}
+
+@keyframes borderAnimation {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+} 

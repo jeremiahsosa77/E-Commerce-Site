@@ -1,62 +1,111 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import Product from '@/models/Product';
+import { mockProducts } from '@/lib/mockData';
+import { ApiResponse, PaginatedResponse, Product, ProductFilter } from '@/types';
 
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
-    const searchParams = new URL(req.url).searchParams;
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const category = searchParams.get('category');
-    const search = searchParams.get('search');
+    // Get URL parameters for filtering
+    const searchParams = request.nextUrl.searchParams;
     const featured = searchParams.get('featured');
-    const sort = searchParams.get('sort') || 'createdAt_desc';
+    const category = searchParams.get('category');
+    const minPrice = searchParams.get('minPrice');
+    const maxPrice = searchParams.get('maxPrice');
+    const inStock = searchParams.get('inStock');
+    const newArrival = searchParams.get('newArrival');
+    const search = searchParams.get('search');
+    const page = parseInt(searchParams.get('page') || '1');
+    const pageSize = parseInt(searchParams.get('pageSize') || '12');
+    const sortBy = searchParams.get('sortBy') || 'createdAt';
+    const sortDir = searchParams.get('sortDir') || 'desc';
     
-    await connectToDatabase();
+    // Apply filters
+    let filteredProducts = [...mockProducts];
     
-    // Build query
-    const query: any = {};
+    if (featured === 'true') {
+      filteredProducts = filteredProducts.filter(product => product.featured);
+    }
     
     if (category) {
-      query.category = category;
+      filteredProducts = filteredProducts.filter(product => product.category === category);
+    }
+    
+    if (minPrice) {
+      filteredProducts = filteredProducts.filter(product => product.price >= parseFloat(minPrice));
+    }
+    
+    if (maxPrice) {
+      filteredProducts = filteredProducts.filter(product => product.price <= parseFloat(maxPrice));
+    }
+    
+    if (inStock === 'true') {
+      filteredProducts = filteredProducts.filter(product => product.inStock);
+    }
+    
+    if (newArrival === 'true') {
+      filteredProducts = filteredProducts.filter(product => product.newArrival);
     }
     
     if (search) {
-      query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { description: { $regex: search, $options: 'i' } },
-      ];
+      const searchLower = search.toLowerCase();
+      filteredProducts = filteredProducts.filter(product => 
+        product.name.toLowerCase().includes(searchLower) || 
+        product.description.toLowerCase().includes(searchLower)
+      );
     }
     
-    if (featured === 'true') {
-      query.featured = true;
-    }
-    
-    // Build sort
-    const [sortField, sortDirection] = sort.split('_');
-    const sortOptions: any = {};
-    sortOptions[sortField] = sortDirection === 'desc' ? -1 : 1;
-    
-    // Execute query with pagination
-    const skip = (page - 1) * limit;
-    
-    const products = await Product.find(query)
-      .sort(sortOptions)
-      .skip(skip)
-      .limit(limit);
-    
-    const total = await Product.countDocuments(query);
-    
-    return NextResponse.json({
-      products,
-      page,
-      pages: Math.ceil(total / limit),
-      total,
+    // Sort products
+    filteredProducts.sort((a, b) => {
+      // Handle different sort fields
+      let valueA, valueB;
+      
+      switch (sortBy) {
+        case 'price':
+          valueA = a.price;
+          valueB = b.price;
+          break;
+        case 'name':
+          valueA = a.name;
+          valueB = b.name;
+          break;
+        case 'rating':
+          valueA = a.rating;
+          valueB = b.rating;
+          break;
+        default: // createdAt or other dates
+          valueA = new Date(a.createdAt).getTime();
+          valueB = new Date(b.createdAt).getTime();
+      }
+      
+      // Sort direction
+      return sortDir === 'asc' 
+        ? (valueA > valueB ? 1 : -1)
+        : (valueA < valueB ? 1 : -1);
     });
+    
+    // Paginate
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedProducts = filteredProducts.slice(startIndex, endIndex);
+    
+    // Prepare response
+    const response: ApiResponse<PaginatedResponse<Product>> = {
+      status: 'success',
+      data: {
+        items: paginatedProducts,
+        total: filteredProducts.length,
+        page,
+        pageSize,
+        totalPages: Math.ceil(filteredProducts.length / pageSize)
+      }
+    };
+    
+    return NextResponse.json(response);
   } catch (error) {
-    console.error('Error fetching products:', error);
+    console.error('Error in products API:', error);
     return NextResponse.json(
-      { error: 'Failed to fetch products' },
+      { status: 'error', error: 'Failed to retrieve products' },
       { status: 500 }
     );
   }
@@ -107,4 +156,7 @@ export async function POST(req: NextRequest) {
       { status: 500 }
     );
   }
-} 
+}
+
+// For a real application, implement POST, PUT, DELETE methods for admin
+// functionality to create, update, and delete products 

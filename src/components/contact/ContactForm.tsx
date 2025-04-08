@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { CheckCircleIcon } from '@heroicons/react/24/outline'
+import { createContactMessage, handleAPIError } from '@/lib/api'
+import ErrorMessage from '@/components/ui/ErrorMessage'
 
 type FormData = {
   name: string
@@ -15,6 +17,7 @@ type FormData = {
 export default function ContactForm() {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isSuccess, setIsSuccess] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   
   const {
     register,
@@ -33,13 +36,10 @@ export default function ContactForm() {
   
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true)
+    setError(null)
     
     try {
-      // This would be replaced with actual API call in a real application
-      console.log('Form data:', data)
-      
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
+      await createContactMessage(data)
       
       // Reset form and show success message
       reset()
@@ -47,9 +47,9 @@ export default function ContactForm() {
       
       // Hide success message after a few seconds
       setTimeout(() => setIsSuccess(false), 5000)
-    } catch (error) {
-      console.error('Error submitting form:', error)
-      alert('There was an error sending your message. Please try again.')
+    } catch (err) {
+      console.error('Error submitting form:', err)
+      setError(handleAPIError(err))
     } finally {
       setIsSubmitting(false)
     }
@@ -71,6 +71,8 @@ export default function ContactForm() {
             </div>
           </div>
         )}
+
+        {error && <ErrorMessage message={error} className="mb-6" />}
         
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid grid-cols-1 gap-y-6 sm:grid-cols-2 sm:gap-x-6">
@@ -86,7 +88,7 @@ export default function ContactForm() {
                   className="block w-full rounded-md border-0 bg-gray-700 py-2 px-3 text-white shadow-sm ring-1 ring-inset ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm"
                 />
                 {errors.name && (
-                  <p className="mt-1 text-sm text-red-500">{errors.name.message}</p>
+                  <ErrorMessage message={errors.name.message} variant="inline" className="mt-1" />
                 )}
               </div>
             </div>
@@ -109,7 +111,7 @@ export default function ContactForm() {
                   className="block w-full rounded-md border-0 bg-gray-700 py-2 px-3 text-white shadow-sm ring-1 ring-inset ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm"
                 />
                 {errors.email && (
-                  <p className="mt-1 text-sm text-red-500">{errors.email.message}</p>
+                  <ErrorMessage message={errors.email.message} variant="inline" className="mt-1" />
                 )}
               </div>
             </div>
@@ -148,7 +150,7 @@ export default function ContactForm() {
                   <option value="other">Other</option>
                 </select>
                 {errors.subject && (
-                  <p className="mt-1 text-sm text-red-500">{errors.subject.message}</p>
+                  <ErrorMessage message={errors.subject.message} variant="inline" className="mt-1" />
                 )}
               </div>
             </div>
@@ -167,7 +169,7 @@ export default function ContactForm() {
                 className="block w-full rounded-md border-0 bg-gray-700 py-2 px-3 text-white shadow-sm ring-1 ring-inset ring-gray-600 placeholder:text-gray-400 focus:ring-2 focus:ring-inset focus:ring-blue-500 sm:text-sm"
               />
               {errors.message && (
-                <p className="mt-1 text-sm text-red-500">{errors.message.message}</p>
+                <ErrorMessage message={errors.message.message} variant="inline" className="mt-1" />
               )}
             </div>
           </div>

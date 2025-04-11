@@ -91,78 +91,46 @@ const variationSchema = new mongoose.Schema({
   },
 });
 
-const productSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: [true, 'Please provide a product name'],
-      trim: true,
-      maxlength: [100, 'Name cannot be more than 100 characters'],
-    },
-    slug: {
-      type: String,
-      required: true,
-      unique: true,
-      lowercase: true,
-    },
-    description: {
-      type: String,
-      required: [true, 'Please provide a product description'],
-    },
-    details: {
-      type: String,
-      required: [true, 'Please provide product details'],
-    },
-    images: [
-      {
-        type: String,
-        required: true,
-      },
-    ],
-    category: {
-      type: String,
-      required: [true, 'Please provide a category'],
-      enum: [
-        'art',
-        'functional',
-        'gadgets',
-        'home',
-        'office',
-        'toys',
-        'custom',
-        'other',
-      ],
-    },
-    subcategory: {
-      type: String,
-    },
-    featured: {
-      type: Boolean,
-      default: false,
-    },
-    variations: [variationSchema],
-    reviews: [reviewSchema],
-    rating: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
-    numReviews: {
-      type: Number,
-      required: true,
-      default: 0,
-    },
-    printTime: {
-      type: Number, // In hours
-      required: true,
-    },
-    filamentUsage: {
-      type: Number, // In grams
-      required: true,
-    },
+const productSchema = new mongoose.Schema({
+  name: {
+    type: String,
+    required: [true, 'Please provide a product name'],
+    maxlength: [100, 'Name cannot be more than 100 characters'],
   },
-  { timestamps: true }
-);
+  description: {
+    type: String,
+    required: [true, 'Please provide a product description'],
+  },
+  price: {
+    type: Number,
+    required: [true, 'Please provide a product price'],
+  },
+  images: [{
+    type: String,
+    required: [true, 'Please provide at least one product image'],
+  }],
+  category: {
+    type: String,
+    required: [true, 'Please provide a product category'],
+  },
+  stock: {
+    type: Number,
+    required: [true, 'Please provide product stock'],
+    default: 0,
+  },
+  featured: {
+    type: Boolean,
+    default: false,
+  },
+  specifications: {
+    type: Map,
+    of: String,
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
+});
 
 // Auto-generate slug from name
 productSchema.pre('save', function (next) {

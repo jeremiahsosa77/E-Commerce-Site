@@ -3,6 +3,7 @@ import { connectToDatabase } from '@/lib/db';
 import User from '@/models/User';
 import bcrypt from 'bcryptjs';
 import { z } from 'zod';
+import connectDB from '@/lib/mongodb';
 
 // Define validation schema
 const registerSchema = z.object({
@@ -13,81 +14,43 @@ const registerSchema = z.object({
   language: z.enum(['en', 'es']).default('en'),
 });
 
-export async function POST(req: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const body = await req.json();
-    
-    // Validate input
-    const result = registerSchema.safeParse(body);
-    if (!result.success) {
+    const { name, email, password } = await request.json();
+
+    if (!name || !email || !password) {
       return NextResponse.json(
-        { error: result.error.errors[0].message },
+        { message: 'All fields are required' },
         { status: 400 }
       );
     }
-    
-    const { name, email, password, referralCode, language } = result.data;
-    
-    await connectToDatabase();
-    
-    // Check if user already exists
+
+    await connectDB();
+
     const existingUser = await User.findOne({ email });
+
     if (existingUser) {
       return NextResponse.json(
-        { error: 'User with this email already exists' },
+        { message: 'User already exists' },
         { status: 400 }
       );
     }
-    
-    // Check referral code if provided
-    let referredBy;
-    if (referralCode) {
-      const referrer = await User.findOne({ referralCode });
-      if (referrer) {
-        referredBy = referrer.referralCode;
-      }
-    }
-    
-    // Create new user
-    const newUser = new User({
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const user = await User.create({
       name,
       email,
-      password, // Will be hashed in the pre-save hook
-      referredBy,
-      language,
+      password: hashedPassword,
     });
-    
-    await newUser.save();
-    
-    // If referred, create a referral discount for the new user
-    if (referredBy) {
-      const mongoose = await connectToDatabase();
-      const Discount = mongoose.model('Discount');
-      
-      // Create a 20% discount for the new user (referral bonus)
-      const newDiscount = new Discount({
-        code: `REF-${newUser.referralCode}`,
-        type: 'percentage',
-        value: 20, // 20% off
-        maxUses: 1,
-        minPurchase: 0,
-        validFrom: new Date(),
-        validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
-        isActive: true,
-        referredBy: referredBy,
-      });
-      
-      await newDiscount.save();
-    }
-    
+
     return NextResponse.json(
       {
-        message: 'User registered successfully',
+        message: 'User created successfully',
         user: {
-          id: newUser._id,
-          name: newUser.name,
-          email: newUser.email,
-          referralCode: newUser.referralCode,
+          id: user._id,
+          name: user.name,
+          email: user.email,
         },
       },
       { status: 201 }
@@ -95,7 +58,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('Registration error:', error);
     return NextResponse.json(
-      { error: 'Something went wrong during registration' },
+      { message: 'An error occurred during registration' },
       { status: 500 }
     );
   }
